@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TKA Alignment and CPAK Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --page:#E9EEF1; --panel:#FFFFFF; --ink:#16232D; --muted:#5A6B77; --line:#C9D3DA;
+  --film:#17242E; --film2:#1F3140; --bone:#D9E2E6; --metal:#F2F5F7;
+  --native:#4FC6D8; --post:#F2B33D; --accent:#0F6E84; --chip:#E2EAEE;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --page:#0E161C; --panel:#15212A; --ink:#E4ECF0; --muted:#93A5B1; --line:#2A3B47;
+    --accent:#5CC4D6; --chip:#1E2E39;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0E161C; --panel:#15212A; --ink:#E4ECF0; --muted:#93A5B1; --line:#2A3B47;
+  --accent:#5CC4D6; --chip:#1E2E39;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 18px 48px}
+header h1{font-size:clamp(1.5rem,3.2vw,2.2rem);line-height:1.15;margin:0 0 6px;font-weight:700;letter-spacing:-0.01em}
+header p{margin:0;color:var(--muted);max-width:68ch}
+.layout{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px;margin-top:22px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+.film{background:radial-gradient(ellipse at 50% 40%,var(--film2),var(--film) 70%);border-radius:14px;padding:12px;color:#CFDCE3;position:relative}
+.film svg{width:100%;height:auto;display:block}
+.filmbar{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;font-size:.85rem;padding:2px 4px 8px}
+.filmbar label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.legend{display:flex;gap:14px;flex-wrap:wrap}
+.legend span::before{content:"";display:inline-block;width:18px;height:0;border-top:2px dashed currentColor;vertical-align:middle;margin-right:6px}
+.legend .n{color:var(--native)} .legend .p{color:var(--post)} .legend .m{color:#9FB2BE}
+.side{display:flex;flex-direction:column;gap:16px}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+.box h2{font-size:1.05rem;margin:0 0 10px;font-weight:700}
+.box h3{font-size:.95rem;margin:14px 0 6px}
+.slider{display:grid;grid-template-columns:1fr auto;gap:2px 12px;margin-bottom:10px}
+.slider label{font-weight:600;font-size:.92rem}
+.slider output{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent)}
+.slider small{grid-column:1/-1;color:var(--muted);font-size:.8rem}
+input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--accent)}
+.strats{display:flex;flex-wrap:wrap;gap:6px}
+.strats button,.btn{font:inherit;font-size:.88rem;border:1px solid var(--line);background:var(--chip);color:var(--ink);padding:7px 12px;border-radius:999px;cursor:pointer}
+.strats button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.play{background:transparent}
+button:focus-visible,input:focus-visible{outline:3px solid var(--post);outline-offset:2px}
+table{width:100%;border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{padding:6px 6px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:600}
+td.n{color:var(--accent)} 
+.postcol{font-weight:700}
+.note{font-size:.85rem;color:var(--muted);margin:8px 0 0}
+.explain{margin-top:20px;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:20px}
+@media (max-width:900px){.explain{grid-template-columns:1fr}}
+.explain ol{margin:6px 0 0;padding-left:1.3em}
+.explain li{margin-bottom:6px}
+.explain p{margin:0 0 8px;max-width:72ch}
+.tag{display:inline-block;font-size:.8rem;background:var(--chip);border-radius:6px;padding:2px 8px;margin-top:4px}
+#cpak{width:100%;max-width:380px;height:auto;display:block;margin:0 auto}
+#cpak .cell{cursor:pointer}
+#cpak .cell:hover rect{opacity:.9}
+.formula{font-variant-numeric:tabular-nums;background:var(--chip);border-radius:8px;padding:8px 10px;font-size:.88rem;margin:6px 0}
+footer{margin-top:24px;font-size:.8rem;color:var(--muted);max-width:80ch}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>Knee alignment in TKA, one patient at a time</h1>
+  <p>Set the patient's native anatomy, pick an alignment philosophy, and watch the femoral and tibial cuts change the limb and its CPAK type. Built for orthopaedic residents.</p>
+</header>
+
+<div class="layout">
+  <section class="film" aria-label="Schematic standing AP view of the right lower limb">
+    <div class="filmbar">
+      <div class="legend"><span class="n">Native joint line</span><span class="p">Implant joint line</span><span class="m">Mechanical axis</span></div>
+      <label><input type="checkbox" id="exag" checked> Exaggerate angles ×2</label>
+    </div>
+    <svg id="legs" viewBox="0 0 520 600" role="img" aria-label="Native and post-operative limb"></svg>
+  </section>
+
+  <div class="side">
+    <div class="box">
+      <h2>1. Patient's native anatomy</h2>
+      <div class="slider">
+        <label for="ldfa">mLDFA (lateral distal femoral angle)</label><output id="ldfaOut"></output>
+        <input type="range" id="ldfa" min="82" max="98" step="0.5" value="90">
+        <small>Higher than 90° means a varus femur; lower means valgus.</small>
+      </div>
+      <div class="slider">
+        <label for="mpta">MPTA (medial proximal tibial angle)</label><output id="mptaOut"></output>
+        <input type="range" id="mpta" min="80" max="96" step="0.5" value="85">
+        <small>Lower than 90° means a varus tibia; higher means valgus.</small>
+      </div>
+      <p class="note">Or tap any cell of the CPAK grid below to load a typical knee of that type.</p>
+    </div>
+
+    <div class="box">
+      <h2>2. Alignment philosophy</h2>
+      <div class="strats" id="strats"></div>
+      <div style="margin-top:10px"><button class="btn play" id="tour">Play through all five</button></div>
+    </div>
+
+    <div class="box">
+      <h2>3. Result</h2>
+      <table>
+        <thead><tr><th></th><th>Native</th><th>After TKA</th></tr></thead>
+        <tbody id="tbl"></tbody>
+      </table>
+      <p class="note" id="changeNote"></p>
+    </div>
+  </div>
+</div>
+
+<div class="explain">
+  <div class="box">
+    <h2 id="exTitle"></h2>
+    <p id="exLead"></p>
+    <h3>How the cuts are decided</h3>
+    <ol id="exSteps"></ol>
+    <span class="tag" id="exRelease"></span>
+  </div>
+  <div class="box">
+    <h2>CPAK classification</h2>
+    <svg id="cpak" viewBox="0 0 340 330" role="img" aria-label="CPAK grid with native and post-operative positions"></svg>
+    <div class="formula">aHKA = MPTA − LDFA &nbsp;&nbsp;(negative is varus)<br>JLO = MPTA + LDFA &nbsp;&nbsp;(below 177° apex distal, above 183° apex proximal)</div>
+    <p class="note">Varus is aHKA below −2°, neutral −2° to +2°, valgus above +2°. Three alignment groups × three joint line groups give nine phenotypes. Mechanical alignment turns every knee into Type V, which is why personalised strategies exist.</p>
+  </div>
+</div>
+
+<footer>Schematic teaching model, right knee viewed from the front with lateral on the left. Boundary values (rKA: components ±5°, HKA ±3°; iKA: tibia ±5°, HKA ±3° corrected through the femur; FA: components ±3°) are illustrative and vary between authors and robotic systems. Real functional alignment also adjusts sagittal and rotational position using measured gaps, which this 2-D model cannot show.</footer>
+</div>
+
+<script>
+(function(){
+const STRATS={
+ MA:{name:"Mechanical",title:"Mechanical alignment (MA)",
+   lead:"The classic approach. Every knee is made neutral regardless of how it was built, and the soft tissues are released to fit the new alignment.",
+   steps:["Cut the distal femur at 90° to the femoral mechanical axis.","Cut the proximal tibia at 90° to the tibial mechanical axis.","Release ligaments until flexion and extension gaps are balanced."]},
+ KA:{name:"Unrestricted KA",title:"Unrestricted kinematic alignment",
+   lead:"Resurface the knee and restore the patient's own pre-arthritic joint lines, with no limits on the final alignment.",
+   steps:["Resect femoral bone equal to implant thickness, adding about 2 mm back on worn condyles.","Cut the tibia parallel to the native plateau, matching its varus or valgus slope.","Accept whatever alignment results. Ligaments stay untouched."]},
+ rKA:{name:"Restricted KA",title:"Restricted kinematic alignment",
+   lead:"Copy the native knee, but only inside a safe zone. Outliers are pulled back to the boundary.",
+   steps:["Plan the native femoral and tibial angles, as in KA.","Limit each component to within 5° of its mechanical axis.","If aHKA is still beyond ±3°, split the extra correction between femur and tibia."]},
+ iKA:{name:"Inverse KA",title:"Inverse kinematic alignment",
+   lead:"Kinematic alignment done tibia first. The tibial joint line is restored, then the femur is placed to balance the gaps against it.",
+   steps:["Cut the tibia first, parallel to the native tibial joint line, within limits.","Position the femoral component so flexion and extension gaps balance against that tibial cut.","If overall alignment exceeds the limit, correct through the femoral side."]},
+ FA:{name:"Functional",title:"Functional alignment",
+   lead:"A robotic, CT-planned approach. Start from the native knee, then move the implants rather than the ligaments until the gaps balance.",
+   steps:["Plan implants on CT at the patient's constitutional alignment.","Measure laxity in extension and flexion with the robot.","Shift implant position in coronal, sagittal and axial planes within boundaries until the gaps are balanced."]}
+};
+const ORDER=["MA","KA","rKA","iKA","FA"];
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+
+function plan(s,L,M){
+  let fL=L,fM=M;
+  if(s==="MA"){fL=90;fM=90;}
+  else if(s==="rKA"){
+    fL=clamp(L,85,95);fM=clamp(M,85,95);
+    const a=fM-fL;
+    if(a<-3){const e=-3-a;fM+=e/2;fL-=e/2;}
+    if(a>3){const e=a-3;fM-=e/2;fL+=e/2;}
+  }else if(s==="iKA"){
+    fM=clamp(M,85,95);fL=L;
+    if(fM-fL<-3)fL=fM+3;
+    if(fM-fL>3)fL=fM-3;
+    fL=clamp(fL,85,95);
+  }else if(s==="FA"){
+    fL=clamp(L,87,93);fM=clamp(M,87,93);
+  }
+  return{L:fL,M:fM};
+}
+function cpakType(a,j){
+  const col=a<-2?0:(a>2?2:1);
+  const row=j<177?0:(j>183?2:1);
+  return ["I","II","III","IV","V","VI","VII","VIII","IX"][row*3+col];
+}
+const desc=a=>a<-2?"varus":(a>2?"valgus":"neutral");
+const jdesc=j=>j<177?"apex distal":(j>183?"apex proximal":"neutral");
+const f1=v=>(Math.round(v*10)/10).toFixed(1);
+const sg=v=>(v>0?"+":v<0?"−":"")+f1(Math.abs(v));
+
+const st={L:90,M:85,s:"KA",ex:2,shown:null};
+
+// ---------- geometry ----------
+const rad=d=>d*Math.PI/180;
+function geom(L,M,ex,cx){
+  const Lv=90+(L-90)*ex,Mv=90+(M-90)*ex;
+  const med=[Math.sin(rad(Lv)),Math.cos(rad(Lv))];
+  const ad=Math.atan2(med[1],med[0])+rad(Mv);
+  const d=[Math.cos(ad),Math.sin(ad)];
+  const H=245, hip=[0,-H], ank=[d[0]*H,d[1]*H];
+  const rot=Math.PI/2-Math.atan2(ank[1]-hip[1],ank[0]-hip[0]);
+  const c=Math.cos(rot),s=Math.sin(rot);
+  const R=p=>[p[0]*c-p[1]*s,p[0]*s+p[1]*c];
+  const h=R(hip),o=[cx-h[0],50-h[1]];
+  const T=p=>{const q=R(p);return[q[0]+o[0],q[1]+o[1]];};
+  return{hip:T(hip),ank:T(ank),k:T([0,0]),up:R([0,-1]),d:R(d),med:R(med)};
+}
+const P=p=>p[0].toFixed(1)+","+p[1].toFixed(1);
+const add=(a,b,t)=>[a[0]+b[0]*t,a[1]+b[1]*t];
+
+function leg(g,implant,nativeG,label,vals){
+  const W=38,k=g.k;
+  const fMed=add(k,g.med,W),fLat=add(k,g.med,-W);
+  const tMed=add(fMed,g.d,8),tLat=add(fLat,g.d,8);
+  let out="";
+  // mechanical axis
+  out+=`<line x1="${P(g.hip).split(",")[0]}" y1="${g.hip[1]}" x2="${g.ank[0]}" y2="${g.ank[1]}" stroke="#9FB2BE" stroke-width="1.4" stroke-dasharray="5 6" opacity=".8"/>`;
+  // femur
+  const fTop=add(k,g.up,50);
+  out+=`<line x1="${g.hip[0]}" y1="${g.hip[1]}" x2="${fTop[0]}" y2="${fTop[1]}" stroke="var(--bone)" stroke-width="24" stroke-linecap="round" opacity=".88"/>`;
+  out+=`<circle cx="${g.hip[0]}" cy="${g.hip[1]}" r="19" fill="var(--bone)" opacity=".92"/>`;
+  out+=`<polygon points="${P(fLat)} ${P(fMed)} ${P(add(fMed,g.up,26))} ${P(add(k,g.up,50))} ${P(add(fLat,g.up,26))}" fill="var(--bone)" stroke="var(--bone)" stroke-width="7" stroke-linejoin="round" opacity=".92"/>`;
+  // tibia
+  const tBot=add(k,g.d,48);
+  out+=`<polygon points="${P(tLat)} ${P(tMed)} ${P(add(tMed,g.d,22))} ${P(tBot)} ${P(add(tLat,g.d,22))}" fill="var(--bone)" stroke="var(--bone)" stroke-width="6" stroke-linejoin="round" opacity=".92"/>`;
+  out+=`<line x1="${tBot[0]}" y1="${tBot[1]}" x2="${g.ank[0]}" y2="${g.ank[1]-10}" stroke="var(--bone)" stroke-width="18" stroke-linecap="round" opacity=".88"/>`;
+  out+=`<ellipse cx="${g.ank[0]}" cy="${g.ank[1]}" rx="20" ry="10" fill="var(--bone)" opacity=".9"/>`;
+  out+=`<line x1="${g.ank[0]-60}" y1="${g.ank[1]+16}" x2="${g.ank[0]+60}" y2="${g.ank[1]+16}" stroke="#5E7584" stroke-width="2"/>`;
+  if(implant){
+    out+=`<polyline points="${P(add(fLat,g.up,18))} ${P(add(fLat,g.med,-2))} ${P(add(fMed,g.med,2))} ${P(add(fMed,g.up,18))}" fill="none" stroke="var(--metal)" stroke-width="6" stroke-linejoin="round"/>`;
+    out+=`<line x1="${tLat[0]}" y1="${tLat[1]}" x2="${tMed[0]}" y2="${tMed[1]}" stroke="var(--post)" stroke-width="5" opacity=".9"/>`;
+    const tr1=add(tLat,g.d,5),tr2=add(tMed,g.d,5);
+    out+=`<line x1="${tr1[0]}" y1="${tr1[1]}" x2="${tr2[0]}" y2="${tr2[1]}" stroke="var(--metal)" stroke-width="6"/>`;
+    const s1=add(k,g.d,14),s2=add(k,g.d,40);
+    out+=`<line x1="${s1[0]}" y1="${s1[1]}" x2="${s2[0]}" y2="${s2[1]}" stroke="var(--metal)" stroke-width="7" stroke-linecap="round"/>`;
+    // native ghost through same knee center
+    const a=add(k,nativeG.med,-W*1.45),b=add(k,nativeG.med,W*1.45);
+    out+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--native)" stroke-width="2" stroke-dasharray="6 5"/>`;
+    const c1=add(k,g.med,-W*1.45),c2=add(k,g.med,W*1.45);
+    out+=`<line x1="${c1[0]}" y1="${c1[1]}" x2="${c2[0]}" y2="${c2[1]}" stroke="var(--post)" stroke-width="2" stroke-dasharray="6 5"/>`;
+  }else{
+    const a=add(k,g.med,-W*1.45),b=add(k,g.med,W*1.45);
+    out+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="var(--native)" stroke-width="2" stroke-dasharray="6 5"/>`;
+  }
+  // angle labels
+  const lp=add(add(k,g.med,-W*1.25),g.up,46), mp=add(add(k,g.med,W*1.25),g.d,52);
+  out+=`<text x="${lp[0]}" y="${lp[1]}" text-anchor="end" font-size="11.5" fill="#CFDCE3">LDFA ${f1(vals.L)}°</text>`;
+  out+=`<text x="${mp[0]}" y="${mp[1]}" text-anchor="start" font-size="11.5" fill="#CFDCE3">MPTA ${f1(vals.M)}°</text>`;
+  const a=vals.M-vals.L,j=vals.M+vals.L;
+  const cx=g.hip[0];
+  out+=`<text x="${cx}" y="22" text-anchor="middle" font-size="15" font-weight="700" fill="${implant?'var(--post)':'var(--native)'}">${label}</text>`;
+  out+=`<text x="${cx}" y="${g.ank[1]+40}" text-anchor="middle" font-size="12.5" fill="#CFDCE3">aHKA ${sg(a)}° ${desc(a)}</text>`;
+  out+=`<text x="${cx}" y="${g.ank[1]+57}" text-anchor="middle" font-size="12.5" fill="#CFDCE3">JLO ${f1(j)}°, CPAK ${cpakType(a,j)}</text>`;
+  return out;
+}
+
+const svg=document.getElementById("legs");
+function drawLegs(post){
+  const ng=geom(st.L,st.M,st.ex,135), pg=geom(post.L,post.M,st.ex,385);
+  let s=`<text x="10" y="300" font-size="11" fill="#7F96A4" transform="rotate(-90 10 300)" text-anchor="middle">Lateral</text>`;
+  s+=`<text x="512" y="300" font-size="11" fill="#7F96A4" transform="rotate(90 512 300)" text-anchor="middle">Medial</text>`;
+  s+=`<line x1="260" y1="40" x2="260" y2="560" stroke="#2D4352" stroke-width="1"/>`;
+  s+=leg(ng,false,ng,"Native knee",{L:st.L,M:st.M});
+  s+=leg(pg,true,ng,"After "+STRATS[st.s].name,post);
+  svg.innerHTML=s;
+}
+
+// ---------- CPAK grid ----------
+const cp=document.getElementById("cpak");
+const X=a=>60+(clamp(a,-9,9)+9)/18*270, Y=j=>30+(clamp(j,171,189)-171)/18*270;
+const CENT=[[-5,174],[0,174],[5,174],[-5,180],[0,180],[5,180],[-5,186],[0,186],[5,186]];
+function drawCpak(post){
+  const types=["I","II","III","IV","V","VI","VII","VIII","IX"];
+  const xs=[-9,-2,2,9], ys=[171,177,183,189];
+  let s="";
+  for(let r=0;r<3;r++)for(let c=0;c<3;c++){
+    const i=r*3+c,x0=X(xs[c]),x1=X(xs[c+1]),y0=Y(ys[r]),y1=Y(ys[r+1]);
+    s+=`<g class="cell" data-i="${i}" tabindex="0" role="button" aria-label="Load typical CPAK type ${types[i]} knee"><rect x="${x0}" y="${y0}" width="${x1-x0}" height="${y1-y0}" fill="var(--chip)" stroke="var(--line)" stroke-width="1.5"/>`;
+    s+=`<text x="${(x0+x1)/2}" y="${(y0+y1)/2+6}" text-anchor="middle" font-size="18" font-weight="700" fill="var(--muted)" opacity=".55">${types[i]}</text></g>`;
+  }
+  s+=`<text x="${(X(-9)+X(-2))/2}" y="320" text-anchor="middle" font-size="11" fill="var(--muted)">Varus</text>`;
+  s+=`<text x="${(X(-2)+X(2))/2}" y="320" text-anchor="middle" font-size="11" fill="var(--muted)">Neutral</text>`;
+  s+=`<text x="${(X(2)+X(9))/2}" y="320" text-anchor="middle" font-size="11" fill="var(--muted)">Valgus</text>`;
+  s+=`<text x="195" y="18" text-anchor="middle" font-size="11" fill="var(--muted)">aHKA (°) across, JLO (°) down</text>`;
+  const rl=[["Apex","distal"],["Neutral","JLO"],["Apex","proximal"]];
+  rl.forEach((t,r)=>{const yc=(Y(ys[r])+Y(ys[r+1]))/2;s+=`<text x="52" y="${yc-2}" text-anchor="end" font-size="10.5" fill="var(--muted)">${t[0]}</text><text x="52" y="${yc+11}" text-anchor="end" font-size="10.5" fill="var(--muted)">${t[1]}</text>`;});
+  const na=st.M-st.L,nj=st.M+st.L,pa=post.M-post.L,pj=post.M+post.L;
+  const nx=X(na),ny=Y(nj),px=X(pa),py=Y(pj);
+  const dist=Math.hypot(px-nx,py-ny);
+  if(dist>14){
+    const ux=(px-nx)/dist,uy=(py-ny)/dist,ex=px-ux*11,ey=py-uy*11;
+    s+=`<line x1="${nx}" y1="${ny}" x2="${ex}" y2="${ey}" stroke="var(--ink)" stroke-width="1.6" opacity=".7"/>`;
+    s+=`<polygon points="${ex+ux*6},${ey+uy*6} ${ex-uy*4.5},${ey+ux*4.5} ${ex+uy*4.5},${ey-ux*4.5}" fill="var(--ink)" opacity=".7"/>`;
+  }
+  s+=`<circle cx="${nx}" cy="${ny}" r="8" fill="var(--native)" stroke="var(--panel)" stroke-width="2"/>`;
+  s+=`<circle cx="${px}" cy="${py}" r="7" fill="var(--post)" stroke="var(--panel)" stroke-width="2"/>`;
+  cp.innerHTML=s;
+  cp.querySelectorAll(".cell").forEach(el=>{
+    const go=()=>{const [a,j]=CENT[+el.dataset.i];setNative((j-a)/2,(j+a)/2);};
+    el.addEventListener("click",go);
+    el.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});
+  });
+}
+
+// ---------- text panels ----------
+function releaseText(s,nA,pA){
+  const c=Math.abs(pA-nA);
+  if(s==="MA") return "Soft-tissue release: "+(c<2?"minimal":c<5?"moderate":"extensive")+` (limb corrected by ${f1(c)}°)`;
+  if(s==="KA") return "Soft-tissue release: none, native ligament balance is kept";
+  if(s==="rKA") return c<0.1?"Soft-tissue release: none, knee is inside the safe zone":`Soft-tissue release: minimal (limb corrected by ${f1(c)}°)`;
+  if(s==="iKA") return "Soft-tissue release: minimal, gaps balanced through femoral positioning";
+  return "Soft-tissue release: minimal, implant position is adjusted instead";
+}
+function drawText(post){
+  const S=STRATS[st.s];
+  const nA=st.M-st.L,nJ=st.M+st.L,pA=post.M-post.L,pJ=post.M+post.L;
+  document.getElementById("tbl").innerHTML=
+   `<tr><th>LDFA</th><td class="n">${f1(st.L)}°</td><td class="postcol">${f1(post.L)}°</td></tr>`+
+   `<tr><th>MPTA</th><td class="n">${f1(st.M)}°</td><td class="postcol">${f1(post.M)}°</td></tr>`+
+   `<tr><th>aHKA</th><td class="n">${sg(nA)}° ${desc(nA)}</td><td class="postcol">${sg(pA)}° ${desc(pA)}</td></tr>`+
+   `<tr><th>JLO</th><td class="n">${f1(nJ)}° ${jdesc(nJ)}</td><td class="postcol">${f1(pJ)}° ${jdesc(pJ)}</td></tr>`+
+   `<tr><th>CPAK</th><td class="n">Type ${cpakType(nA,nJ)}</td><td class="postcol">Type ${cpakType(pA,pJ)}</td></tr>`;
+  const t=plan(st.s,st.L,st.M);
+  const dF=t.L-st.L,dT=t.M-st.M;
+  document.getElementById("changeNote").textContent=
+    (Math.abs(dF)<0.05&&Math.abs(dT)<0.05)?"Both components sit exactly on the native joint lines.":
+    `Femoral component moved ${sg(-dF)}° and tibial component ${sg(dT)}° from native (positive means toward valgus).`;
+  document.getElementById("exTitle").textContent=S.title;
+  document.getElementById("exLead").textContent=S.lead;
+  document.getElementById("exSteps").innerHTML=S.steps.map(x=>`<li>${x}</li>`).join("");
+  document.getElementById("exRelease").textContent=releaseText(st.s,nA,plan(st.s,st.L,st.M).M-plan(st.s,st.L,st.M).L);
+}
+
+// ---------- animation ----------
+const reduce=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+let anim=null;
+function render(animate){
+  const target=plan(st.s,st.L,st.M);
+  document.getElementById("ldfaOut").textContent=f1(st.L)+"°";
+  document.getElementById("mptaOut").textContent=f1(st.M)+"°";
+  drawText(target);
+  if(anim)cancelAnimationFrame(anim);
+  const from=st.shown||target;
+  if(!animate||reduce){st.shown=target;drawLegs(target);drawCpak(target);return;}
+  const t0=performance.now(),dur=750;
+  const step=now=>{
+    let u=Math.min(1,(now-t0)/dur);u=u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;
+    const cur={L:from.L+(target.L-from.L)*u,M:from.M+(target.M-from.M)*u};
+    st.shown=cur;drawLegs(cur);drawCpak(cur);
+    if(u<1)anim=requestAnimationFrame(step);
+  };
+  anim=requestAnimationFrame(step);
+}
+function setNative(L,M){
+  st.L=L;st.M=M;
+  document.getElementById("ldfa").value=L;document.getElementById("mpta").value=M;
+  st.shown={L,M};render(true);
+}
+
+// ---------- controls ----------
+const sb=document.getElementById("strats");
+ORDER.forEach(k=>{
+  const b=document.createElement("button");
+  b.textContent=STRATS[k].name;b.dataset.k=k;
+  b.setAttribute("aria-pressed",k===st.s);
+  b.addEventListener("click",()=>{stopTour();choose(k);});
+  sb.appendChild(b);
+});
+function choose(k){
+  st.s=k;
+  sb.querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.k===k));
+  render(true);
+}
+["ldfa","mpta"].forEach(id=>{
+  document.getElementById(id).addEventListener("input",e=>{
+    if(id==="ldfa")st.L=+e.target.value;else st.M=+e.target.value;
+    st.shown=null;render(false);
+  });
+});
+document.getElementById("exag").addEventListener("change",e=>{st.ex=e.target.checked?2:1;render(false);});
+let tour=null;
+const tb=document.getElementById("tour");
+function stopTour(){if(tour){clearInterval(tour);tour=null;tb.textContent="Play through all five";}}
+tb.addEventListener("click",()=>{
+  if(tour){stopTour();return;}
+  tb.textContent="Stop";
+  let i=0;choose(ORDER[0]);
+  tour=setInterval(()=>{i++;if(i>=ORDER.length){stopTour();return;}choose(ORDER[i]);},3200);
+});
+
+st.shown={L:st.L,M:st.M};
+render(true);
+})();
+</script>
+</body>
+</html>
